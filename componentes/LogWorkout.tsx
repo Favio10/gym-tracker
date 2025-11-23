@@ -73,6 +73,27 @@ export default function LogWorkout({ exercises }: { exercises: Exercise[] }) {
     }
   }
 
+
+  // funcion para eliminar
+  const handleDelete = async (id: number) => {
+    // primero la confirmacion
+    if(!window.confirm("¿confirmas eliminar esta serie?")) return
+
+    // borrado en supabase
+    const { error } = await supabase
+      .from('sets')
+      .delete()
+      .eq('id', id)
+
+      if (error) {
+        alert("Error al borrar: " + error.message)
+      } else {
+        // actualizo el historial visual
+        setHistory(prev => prev.filter(item => item.id !== id))
+      }
+  }
+  
+
   // Helper para formatear la fecha 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -144,15 +165,26 @@ export default function LogWorkout({ exercises }: { exercises: Exercise[] }) {
         ) : (
           <div className="space-y-2">
             {history.map((set) => (
-              <div key={set.id} className="flex justify-between items-center bg-gray-700/50 p-3 rounded border-l-4 border-blue-500">
+              <div key={set.id} className="flex justify-between items-center bg-gray-700/50 p-3 rounded border-l-4 border-blue-500 group">
                 <div>
-                  <span className="text-white font-bold text-lg">{set.weight} kg</span>
-                  <span className="text-gray-400 text-sm mx-2">x</span>
-                  <span className="text-white font-bold text-lg">{set.reps} reps</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-white font-bold text-lg">{set.weight} kg</span>
+                    <span className="text-gray-400 text-sm">x</span>
+                    <span className="text-white font-bold text-lg">{set.reps} reps</span>
+                  </div>
+                  <div className="text-xs text-gray-500 font-mono">
+                    {formatDate(set.created_at)}
+                  </div>
                 </div>
-                <span className="text-xs text-gray-500 font-mono">
-                  {formatDate(set.created_at)}
-                </span>
+                
+                {/* BOTÓN BORRAR NUEVO */}
+                <button 
+                  onClick={() => handleDelete(set.id)}
+                  className="text-gray-500 hover:text-red-500 p-2 transition-colors"
+                  title="Borrar serie"
+                >
+                  🗑️
+                </button>
               </div>
             ))}
           </div>
