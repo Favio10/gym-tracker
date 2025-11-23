@@ -12,7 +12,7 @@ export default async function Home() {
           GYM TRACKER 💪
         </h1>
         <p className="text-center text-gray-500 mb-6 text-sm">
-          Mata el óxido, gana músculo.
+          dale loco, metele.
         </p>
 
         {/* aca ponemos el formulario y le pasamos los ejercicios como "props" */}
