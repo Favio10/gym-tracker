@@ -3,12 +3,12 @@ import { redirect } from "next/navigation";
 import LogWorkout from "@/componentes/LogWorkout";
 import Link from "next/link";
 
-// Esta página recibe el parámetro "id" desde la URL
+// en esta pagina recibe el id desde la URL
 export default async function WorkoutSessionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params; // Accedemos al ID de la rutina (Next.js 15 requiere await en params)
   const supabase = await createClient();
 
-  // 1. Verificamos sesión
+  // 1. Verificamos sesion
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
@@ -21,7 +21,7 @@ export default async function WorkoutSessionPage({ params }: { params: Promise<{
 
   if (!routine) return <div className="p-8 text-white">Rutina no encontrada 😢</div>;
 
-  // 3. ¡LA MAGIA! Traemos SOLO los ejercicios de esta rutina
+  // 3. traemos solo los ejercicios de esta rutina
   // Hacemos un JOIN complejo: routine_exercises -> exercises
   const { data: routineExercises } = await supabase
     .from('routine_exercises')
