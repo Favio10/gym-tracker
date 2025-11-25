@@ -2,14 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
-const supabase = createClient()
 
 type Exercise = {
   id: number
   name: string
 }
 
-// defino la forma de una serie para el historial
 type SetHistory = {
   id: number
   weight: number
@@ -17,33 +15,58 @@ type SetHistory = {
   created_at: string
 }
 
-export default function LogWorkout({ exercises }: { exercises: Exercise[] }) {
-  const [exerciseId, setExerciseId] = useState<number | string>(exercises[0]?.id || "")
+// Recibimos initialExercises en lugar de exercises fijos
+export default function LogWorkout({ exercises: initialExercises }: { exercises: Exercise[] }) {
+  const supabase = createClient()
+  
+  // Convertimos los ejercicios en un ESTADO para poder agregar nuevos visualmente
+  const [exercises, setExercises] = useState<Exercise[]>(initialExercises)
+  const [exerciseId, setExerciseId] = useState<number | string>(initialExercises[0]?.id || "")
+  
   const [weight, setWeight] = useState('')
   const [reps, setReps] = useState('')
   const [loading, setLoading] = useState(false)
-  
-  // estado para guardar el historial que traemos de la base de datos
   const [history, setHistory] = useState<SetHistory[]>([])
- 
-  // Cada vez que cambia el exerciseId, buscamos su historial
+
   useEffect(() => {
     if (exerciseId) {
       fetchHistory(Number(exerciseId))
     }
   }, [exerciseId])
 
-  // aca pido los datos a Supabase
   const fetchHistory = async (id: number) => {
     const { data, error } = await supabase
       .from('sets')
       .select('id, weight, reps, created_at')
-      .eq('exercise_id', id)       // Filtrar por el ejercicio actual
-      .order('created_at', { ascending: false }) // Los más nuevos primero
-      .limit(5)                    // Solo los últimos 5
+      .eq('exercise_id', id)
+      .order('created_at', { ascending: false })
+      .limit(5) // Traemos los últimos 5
 
     if (error) console.error("Error trayendo historial:", error)
     if (data) setHistory(data)
+  }
+
+  // --- NUEVA FUNCIÓN: AGREGAR EJERCICIO ---
+  const handleAddExercise = async () => {
+    const newName = window.prompt("¿Nombre del nuevo ejercicio? (Ej: Curl de Bíceps)")
+    if (!newName) return // Si cancela o lo deja vacío, no hacemos nada
+
+    // 1. Guardar en Supabase
+    const { data, error } = await supabase
+      .from('exercises')
+      .insert([{ name: newName }])
+      .select() // Pedimos que nos devuelva el dato creado
+
+    if (error) {
+      alert("Error al crear: " + error.message)
+    } else if (data) {
+      // 2. Agregarlo a la lista visualmente
+      const newExercise = data[0]
+      setExercises(prev => [...prev, newExercise])
+      // 3. Seleccionarlo automáticamente
+      setExerciseId(newExercise.id)
+      alert(`¡Ejercicio "${newName}" creado!`)
+    }
   }
 
   const handleSave = async () => {
@@ -66,36 +89,18 @@ export default function LogWorkout({ exercises }: { exercises: Exercise[] }) {
     if (error) {
       alert("Error: " + error.message)
     } else {
-      // Limpiamos inputs
       setWeight('')
       setReps('')
-      // Actualizamos el historial inmediatamente para ver el cambio
       fetchHistory(Number(exerciseId))
     }
   }
 
-
-  // funcion para eliminar
   const handleDelete = async (id: number) => {
-    // primero la confirmacion
-    if(!window.confirm("¿confirmas eliminar esta serie?")) return
-
-    // borrado en supabase
-    const { error } = await supabase
-      .from('sets')
-      .delete()
-      .eq('id', id)
-
-      if (error) {
-        alert("Error al borrar: " + error.message)
-      } else {
-        // actualizo el historial visual
-        setHistory(prev => prev.filter(item => item.id !== id))
-      }
+    if (!window.confirm("¿Borrar esta serie?")) return
+    const { error } = await supabase.from('sets').delete().eq('id', id)
+    if (!error) setHistory(prev => prev.filter(item => item.id !== id))
   }
-  
 
-  // Helper para formatear la fecha 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })
@@ -107,10 +112,19 @@ export default function LogWorkout({ exercises }: { exercises: Exercise[] }) {
         <span>💪</span> Registrar Serie
       </h3>
 
-      {/* FORMULARIO DE CARGA */}
       <div className="flex flex-col gap-4 mb-8">
+        {/* SELECTOR + BOTÓN NUEVO */}
         <div>
-          <label className="block text-xs font-uppercase text-gray-400 mb-1 tracking-wider">EJERCICIO</label>
+          <div className="flex justify-between items-end mb-1">
+            <label className="block text-xs font-uppercase text-gray-400 tracking-wider">EJERCICIO</label>
+            <button 
+              onClick={handleAddExercise}
+              className="text-xs text-blue-400 hover:text-blue-300 underline cursor-pointer"
+            >
+              + Crear Nuevo
+            </button>
+          </div>
+          
           <select 
             className="w-full p-3 rounded-lg bg-gray-900 text-white border border-gray-600 focus:border-green-500 focus:outline-none"
             value={exerciseId}
@@ -155,18 +169,17 @@ export default function LogWorkout({ exercises }: { exercises: Exercise[] }) {
         </button>
       </div>
 
-      {/* HISTORIAL */}
       <div className="border-t border-gray-700 pt-6">
         <h4 className="text-sm text-gray-400 mb-3 uppercase tracking-widest font-semibold">
           Historial Reciente
         </h4>
         
         {history.length === 0 ? (
-          <p className="text-gray-500 text-sm italic">Sin datos previos.</p>
+          <p className="text-gray-500 text-sm italic">Sin datos previos para este ejercicio.</p>
         ) : (
           <div className="space-y-2">
             {history.map((set) => (
-              <div key={set.id} className="flex justify-between items-center bg-gray-700/50 p-3 rounded border-l-4 border-blue-500 group">
+              <div key={set.id} className="flex justify-between items-center bg-gray-700/50 p-3 rounded border-l-4 border-blue-500">
                 <div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-white font-bold text-lg">{set.weight} kg</span>
@@ -177,12 +190,9 @@ export default function LogWorkout({ exercises }: { exercises: Exercise[] }) {
                     {formatDate(set.created_at)}
                   </div>
                 </div>
-                
-                {/* BOTÓN BORRAR NUEVO */}
                 <button 
                   onClick={() => handleDelete(set.id)}
-                  className="text-gray-500 hover:text-red-500 p-2 transition-colors"
-                  title="Borrar serie"
+                  className="text-gray-500 hover:text-red-500 p-2"
                 >
                   🗑️
                 </button>
