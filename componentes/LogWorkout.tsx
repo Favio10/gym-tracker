@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import ProgressChart from './ProgressChart' // <--- IMPORTAMOS EL GRÁFICO
 
 type Exercise = {
   id: number
@@ -15,18 +16,19 @@ type SetHistory = {
   created_at: string
 }
 
-// Recibimos initialExercises en lugar de exercises fijos
 export default function LogWorkout({ exercises: initialExercises }: { exercises: Exercise[] }) {
   const supabase = createClient()
   
-  // Convertimos los ejercicios en un ESTADO para poder agregar nuevos visualmente
   const [exercises, setExercises] = useState<Exercise[]>(initialExercises)
   const [exerciseId, setExerciseId] = useState<number | string>(initialExercises[0]?.id || "")
   
   const [weight, setWeight] = useState('')
   const [reps, setReps] = useState('')
   const [loading, setLoading] = useState(false)
+  
   const [history, setHistory] = useState<SetHistory[]>([])
+  const [chartData, setChartData] = useState<any[]>([]) // <--- DATOS PARA EL GRÁFICO
+  const [showChart, setShowChart] = useState(false)     // <--- MOSTRAR/OCULTAR GRÁFICO
 
   useEffect(() => {
     if (exerciseId) {
@@ -35,36 +37,50 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
   }, [exerciseId])
 
   const fetchHistory = async (id: number) => {
+    // 1. Traemos los datos (aumentamos el límite a 20 para que el gráfico se vea lindo)
     const { data, error } = await supabase
       .from('sets')
       .select('id, weight, reps, created_at')
       .eq('exercise_id', id)
-      .order('created_at', { ascending: false })
-      .limit(5) // Traemos los últimos 5
+      .order('created_at', { ascending: false }) // Del más nuevo al más viejo
+      .limit(20)
 
     if (error) console.error("Error trayendo historial:", error)
-    if (data) setHistory(data)
+    
+    if (data) {
+      setHistory(data)
+      prepareChartData(data)
+    }
   }
 
-  // --- NUEVA FUNCIÓN: AGREGAR EJERCICIO ---
+  // Transformamos los datos para Recharts (necesita orden cronológico: viejo -> nuevo)
+  const prepareChartData = (data: SetHistory[]) => {
+    const reversedData = [...data].reverse() // Invertimos para que vaya de izquierda a derecha en el tiempo
+    
+    // Mapeamos solo lo que necesita el gráfico
+    const cleanData = reversedData.map(item => ({
+      date: new Date(item.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }),
+      weight: item.weight
+    }))
+
+    setChartData(cleanData)
+  }
+
   const handleAddExercise = async () => {
     const newName = window.prompt("¿Nombre del nuevo ejercicio? (Ej: Curl de Bíceps)")
-    if (!newName) return // Si cancela o lo deja vacío, no hacemos nada
+    if (!newName) return 
 
-    // 1. Guardar en Supabase
     const { data, error } = await supabase
       .from('exercises')
       .insert([{ name: newName }])
-      .select() // Pedimos que nos devuelva el dato creado
+      .select()
+      .single()
 
     if (error) {
       alert("Error al crear: " + error.message)
     } else if (data) {
-      // 2. Agregarlo a la lista visualmente
-      const newExercise = data[0]
-      setExercises(prev => [...prev, newExercise])
-      // 3. Seleccionarlo automáticamente
-      setExerciseId(newExercise.id)
+      setExercises(prev => [...prev, data])
+      setExerciseId(data.id)
       alert(`¡Ejercicio "${newName}" creado!`)
     }
   }
@@ -76,13 +92,11 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
 
     const { error } = await supabase
       .from('sets')
-      .insert([
-        { 
+      .insert([{ 
           exercise_id: Number(exerciseId), 
           weight: Number(weight), 
           reps: Number(reps) 
-        }
-      ])
+      }])
 
     setLoading(false)
 
@@ -91,14 +105,19 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
     } else {
       setWeight('')
       setReps('')
-      fetchHistory(Number(exerciseId))
+      fetchHistory(Number(exerciseId)) // Esto actualiza lista Y gráfico automáticamente
     }
   }
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("¿Borrar esta serie?")) return
     const { error } = await supabase.from('sets').delete().eq('id', id)
-    if (!error) setHistory(prev => prev.filter(item => item.id !== id))
+    if (!error) {
+      // Actualizamos manualmente para no hacer otra llamada a la API
+      const newHistory = history.filter(item => item.id !== id)
+      setHistory(newHistory)
+      prepareChartData(newHistory)
+    }
   }
 
   const formatDate = (dateString: string) => {
@@ -108,12 +127,26 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
 
   return (
     <div className="bg-gray-800 p-5 rounded-xl shadow-2xl mt-6 border border-gray-700">
-      <h3 className="text-xl font-bold mb-6 text-green-400 flex items-center gap-2">
-        <span>💪</span> Registrar Serie
+      <h3 className="text-xl font-bold mb-6 text-green-400 flex items-center justify-between gap-2">
+        <span className="flex items-center gap-2">💪 Registrar Serie</span>
+        
+        {/* BOTÓN PARA MOSTRAR/OCULTAR GRÁFICO */}
+        <button 
+          onClick={() => setShowChart(!showChart)}
+          className={`text-xs px-3 py-1 rounded-full border transition-all ${
+            showChart 
+              ? 'bg-blue-600/20 border-blue-500 text-blue-200' 
+              : 'bg-gray-700 border-gray-600 text-gray-400 hover:text-white'
+          }`}
+        >
+          {showChart ? 'Ocultar Gráfico' : 'Ver Progreso 📈'}
+        </button>
       </h3>
 
+      {/* --- AQUÍ VA EL GRÁFICO --- */}
+      {showChart && <ProgressChart data={chartData} />}
+
       <div className="flex flex-col gap-4 mb-8">
-        {/* SELECTOR + BOTÓN NUEVO */}
         <div>
           <div className="flex justify-between items-end mb-1">
             <label className="block text-xs font-uppercase text-gray-400 tracking-wider">EJERCICIO</label>
