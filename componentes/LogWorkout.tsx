@@ -35,7 +35,7 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
   const [restTimer, setRestTimer] = useState(0) // Tiempo restante en segundos
   const [isTimerRunning, setIsTimerRunning] = useState(false)
 
-  // Lógica del Cronómetro
+
   useEffect(() => {
     let interval: NodeJS.Timeout
     
@@ -44,13 +44,13 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
         setRestTimer((prev) => prev - 1)
       }, 1000)
     } else if (restTimer === 0 && isTimerRunning) {
-      // Cuando llega a cero
+
       setIsTimerRunning(false)
-      // Vibrar el celular (200ms) si el navegador lo soporta
+
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate([200, 100, 200]) 
       }
-      // Opcional: Reproducir un sonido aquí
+
     }
 
     return () => clearInterval(interval)
@@ -142,11 +142,11 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
       setSetCount(1)
       fetchHistory(Number(exerciseId))
 
-      // --- INICIAR CRONÓMETRO AUTOMÁTICO ---
+
       setRestTimer(90) // 90 segundos por defecto
       setIsTimerRunning(true)
       
-      // Hacemos scroll suave hacia arriba para ver el tiempo
+
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
