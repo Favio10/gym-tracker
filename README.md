@@ -37,10 +37,10 @@ npm install
 
 
 ## 👨‍💻 Autor
-# Favio Olivera
+ Favio Olivera
 
-# Desarrollador Fullstack.
+ Desarrollador Fullstack.
 
-# Enfocado en crear productos digitales escalables y funcionales.
+ Enfocado en crear productos digitales escalables y funcionales.
 
-# 📍 Córdoba, Argentina
+ 📍 Córdoba, Argentina
