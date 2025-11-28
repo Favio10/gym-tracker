@@ -22,21 +22,32 @@ export default async function Home() {
   return (
     <div className="min-h-screen p-4 bg-gray-900 text-white pb-20">
       <div className="max-w-md mx-auto">
-        <header className="flex justify-between items-center mb-8">
+        <header className="flex justify-between items-center mb-8 bg-gray-800/50 p-4 rounded-xl border border-gray-700 backdrop-blur-sm">
           <div>
             <h1 className="text-2xl font-bold text-blue-400 tracking-tighter">GYM TRACKER 🚀</h1>
-            <p className="text-xs text-gray-400">Hola, {user.email?.split('@')[0]}</p>
+            <p className="text-[10px] text-gray-400 font-mono">USUARIO: {user.email?.split('@')[0].toUpperCase()}</p>
           </div>
+
+          <div className="flex gap-2">
+            {/* BOTON HISTORIAL*/}
+            <Link
+              href="/history"
+              className="text-xs bg-blue-900/30 text-blue-200 px-3 py-2 rounded border border-blue-800 hover:bg-blue-900/50 flex items-center gap-1"
+            >
+              📅 Historial
+            </Link>
+
           <form action={async () => {
             'use server'
             const supabase = await createClient()
             await supabase.auth.signOut()
             redirect('/login')
           }}>
-            <button className="text-xs bg-red-900/30 text-red-200 px-3 py-1 rounded border border-red-800 hover:bg-red-900/50">
+            <button className="h-full text-xs bg-red-900/30 text-red-200 px-3 py-2 rounded border border-red-800 hover:bg-red-900/50">
               Salir
             </button>
           </form>
+          </div>
         </header>
 
         {/* --- SECCIÓN: MIS RUTINAS --- */}
