@@ -24,13 +24,50 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
   
   const [weight, setWeight] = useState('')
   const [reps, setReps] = useState('')
-
-  const [setCount, setSetCount] = useState(1) 
+  const [setCount, setSetCount] = useState(1)
   const [loading, setLoading] = useState(false)
   
   const [history, setHistory] = useState<SetHistory[]>([])
   const [chartData, setChartData] = useState<any[]>([])
   const [showChart, setShowChart] = useState(false)
+
+  // --- ESTADOS DEL CRONÓMETRO ---
+  const [restTimer, setRestTimer] = useState(0) // Tiempo restante en segundos
+  const [isTimerRunning, setIsTimerRunning] = useState(false)
+
+  // Lógica del Cronómetro
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    
+    if (isTimerRunning && restTimer > 0) {
+      interval = setInterval(() => {
+        setRestTimer((prev) => prev - 1)
+      }, 1000)
+    } else if (restTimer === 0 && isTimerRunning) {
+      // Cuando llega a cero
+      setIsTimerRunning(false)
+      // Vibrar el celular (200ms) si el navegador lo soporta
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate([200, 100, 200]) 
+      }
+      // Opcional: Reproducir un sonido aquí
+    }
+
+    return () => clearInterval(interval)
+  }, [isTimerRunning, restTimer])
+
+  // Helper para formatear segundos a MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`
+  }
+
+  // Helper para sumar/restar tiempo
+  const adjustTime = (amount: number) => {
+    setRestTimer(prev => Math.max(0, prev + amount))
+    if (!isTimerRunning) setIsTimerRunning(true)
+  }
 
   useEffect(() => {
     if (exerciseId) {
@@ -87,7 +124,6 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
     
     setLoading(true)
 
-
     const newSets = Array.from({ length: setCount }).map(() => ({
       exercise_id: Number(exerciseId), 
       weight: Number(weight), 
@@ -96,19 +132,22 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
 
     const { error } = await supabase
       .from('sets')
-      .insert(newSets) 
+      .insert(newSets)
 
     setLoading(false)
 
     if (error) {
       alert("Error: " + error.message)
     } else {
-   
-      // setWeight('')  
-      // setReps('')    
-      setSetCount(1) 
-      
+      setSetCount(1)
       fetchHistory(Number(exerciseId))
+
+      // --- INICIAR CRONÓMETRO AUTOMÁTICO ---
+      setRestTimer(90) // 90 segundos por defecto
+      setIsTimerRunning(true)
+      
+      // Hacemos scroll suave hacia arriba para ver el tiempo
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 
@@ -128,7 +167,26 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
   }
 
   return (
-    <div className="bg-gray-800 p-5 rounded-xl shadow-2xl mt-6 border border-gray-700">
+    <div className="bg-gray-800 p-5 rounded-xl shadow-2xl mt-6 border border-gray-700 relative">
+      
+      {/* --- CRONÓMETRO FLOTANTE --- */}
+      {restTimer > 0 && (
+        <div className="mb-6 bg-blue-900/40 border border-blue-500/50 p-4 rounded-xl flex flex-col items-center justify-center animate-pulse">
+          <span className="text-xs text-blue-300 uppercase tracking-widest font-bold mb-1">Descanso</span>
+          <div className="text-4xl font-mono font-bold text-white mb-3">
+            {formatTime(restTimer)}
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => adjustTime(-10)} className="px-3 py-1 bg-gray-700 rounded text-xs text-white">-10s</button>
+            <button onClick={() => setIsTimerRunning(!isTimerRunning)} className="px-4 py-1 bg-blue-600 rounded text-xs text-white font-bold">
+              {isTimerRunning ? 'PAUSA' : 'REANUDAR'}
+            </button>
+            <button onClick={() => adjustTime(30)} className="px-3 py-1 bg-gray-700 rounded text-xs text-white">+30s</button>
+            <button onClick={() => setRestTimer(0)} className="px-3 py-1 bg-red-900/50 text-red-300 rounded text-xs">❌</button>
+          </div>
+        </div>
+      )}
+
       <h3 className="text-xl font-bold mb-6 text-green-400 flex items-center justify-between gap-2">
         <span className="flex items-center gap-2">💪 Registrar Serie</span>
         
@@ -140,7 +198,7 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
               : 'bg-gray-700 border-gray-600 text-gray-400 hover:text-white'
           }`}
         >
-          {showChart ? 'Ocultar Gráfico' : 'Ver Progreso 📈'}
+          {showChart ? 'Ocultar' : 'Ver Progreso 📈'}
         </button>
       </h3>
 
@@ -193,11 +251,9 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
             />
           </div>
 
-          {/* NUEVO INPUT: CANTIDAD DE SERIES */}
           <div className="w-1/3">
             <label className="block text-xs font-uppercase text-blue-400 mb-1 tracking-wider font-bold">SERIES</label>
             <div className="flex items-center bg-gray-900 rounded-lg border border-gray-600 overflow-hidden">
-               {/* Botones -/+ para facilitar uso en móvil */}
                <button 
                  onClick={() => setSetCount(prev => Math.max(1, prev - 1))}
                  className="px-3 py-3 hover:bg-gray-700 text-gray-400"
