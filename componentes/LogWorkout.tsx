@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import ProgressChart from './ProgressChart' // <--- IMPORTAMOS EL GRÁFICO
+import ProgressChart from './ProgressChart'
 
 type Exercise = {
   id: number
@@ -24,11 +24,13 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
   
   const [weight, setWeight] = useState('')
   const [reps, setReps] = useState('')
+
+  const [setCount, setSetCount] = useState(1) 
   const [loading, setLoading] = useState(false)
   
   const [history, setHistory] = useState<SetHistory[]>([])
-  const [chartData, setChartData] = useState<any[]>([]) // <--- DATOS PARA EL GRÁFICO
-  const [showChart, setShowChart] = useState(false)     // <--- MOSTRAR/OCULTAR GRÁFICO
+  const [chartData, setChartData] = useState<any[]>([])
+  const [showChart, setShowChart] = useState(false)
 
   useEffect(() => {
     if (exerciseId) {
@@ -37,12 +39,11 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
   }, [exerciseId])
 
   const fetchHistory = async (id: number) => {
-    // 1. Traemos los datos (aumentamos el límite a 20 para que el gráfico se vea lindo)
     const { data, error } = await supabase
       .from('sets')
       .select('id, weight, reps, created_at')
       .eq('exercise_id', id)
-      .order('created_at', { ascending: false }) // Del más nuevo al más viejo
+      .order('created_at', { ascending: false })
       .limit(20)
 
     if (error) console.error("Error trayendo historial:", error)
@@ -53,16 +54,12 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
     }
   }
 
-  // Transformamos los datos para Recharts (necesita orden cronológico: viejo -> nuevo)
   const prepareChartData = (data: SetHistory[]) => {
-    const reversedData = [...data].reverse() // Invertimos para que vaya de izquierda a derecha en el tiempo
-    
-    // Mapeamos solo lo que necesita el gráfico
+    const reversedData = [...data].reverse()
     const cleanData = reversedData.map(item => ({
       date: new Date(item.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }),
       weight: item.weight
     }))
-
     setChartData(cleanData)
   }
 
@@ -90,22 +87,28 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
     
     setLoading(true)
 
+
+    const newSets = Array.from({ length: setCount }).map(() => ({
+      exercise_id: Number(exerciseId), 
+      weight: Number(weight), 
+      reps: Number(reps)
+    }))
+
     const { error } = await supabase
       .from('sets')
-      .insert([{ 
-          exercise_id: Number(exerciseId), 
-          weight: Number(weight), 
-          reps: Number(reps) 
-      }])
+      .insert(newSets) 
 
     setLoading(false)
 
     if (error) {
       alert("Error: " + error.message)
     } else {
-      setWeight('')
-      setReps('')
-      fetchHistory(Number(exerciseId)) // Esto actualiza lista Y gráfico automáticamente
+   
+      // setWeight('')  
+      // setReps('')    
+      setSetCount(1) 
+      
+      fetchHistory(Number(exerciseId))
     }
   }
 
@@ -113,7 +116,6 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
     if (!window.confirm("¿Borrar esta serie?")) return
     const { error } = await supabase.from('sets').delete().eq('id', id)
     if (!error) {
-      // Actualizamos manualmente para no hacer otra llamada a la API
       const newHistory = history.filter(item => item.id !== id)
       setHistory(newHistory)
       prepareChartData(newHistory)
@@ -130,7 +132,6 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
       <h3 className="text-xl font-bold mb-6 text-green-400 flex items-center justify-between gap-2">
         <span className="flex items-center gap-2">💪 Registrar Serie</span>
         
-        {/* BOTÓN PARA MOSTRAR/OCULTAR GRÁFICO */}
         <button 
           onClick={() => setShowChart(!showChart)}
           className={`text-xs px-3 py-1 rounded-full border transition-all ${
@@ -143,7 +144,6 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
         </button>
       </h3>
 
-      {/* --- AQUÍ VA EL GRÁFICO --- */}
       {showChart && <ProgressChart data={chartData} />}
 
       <div className="flex flex-col gap-4 mb-8">
@@ -169,9 +169,10 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
           </select>
         </div>
 
-        <div className="flex gap-3">
-          <div className="w-1/2">
-            <label className="block text-xs font-uppercase text-gray-400 mb-1 tracking-wider">PESO (KG)</label>
+        {/* INPUTS DE CARGA */}
+        <div className="flex gap-2">
+          <div className="w-1/3">
+            <label className="block text-xs font-uppercase text-gray-400 mb-1 tracking-wider">PESO</label>
             <input 
               type="number" 
               className="w-full p-3 rounded-lg bg-gray-900 text-white border border-gray-600 focus:border-green-500 focus:outline-none text-center text-lg font-mono"
@@ -181,7 +182,7 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
             />
           </div>
 
-          <div className="w-1/2">
+          <div className="w-1/3">
             <label className="block text-xs font-uppercase text-gray-400 mb-1 tracking-wider">REPS</label>
             <input 
               type="number" 
@@ -191,14 +192,36 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
               onChange={(e) => setReps(e.target.value)}
             />
           </div>
+
+          {/* NUEVO INPUT: CANTIDAD DE SERIES */}
+          <div className="w-1/3">
+            <label className="block text-xs font-uppercase text-blue-400 mb-1 tracking-wider font-bold">SERIES</label>
+            <div className="flex items-center bg-gray-900 rounded-lg border border-gray-600 overflow-hidden">
+               {/* Botones -/+ para facilitar uso en móvil */}
+               <button 
+                 onClick={() => setSetCount(prev => Math.max(1, prev - 1))}
+                 className="px-3 py-3 hover:bg-gray-700 text-gray-400"
+               >-</button>
+               <div className="flex-1 text-center font-mono text-lg text-white font-bold">
+                 {setCount}
+               </div>
+               <button 
+                 onClick={() => setSetCount(prev => Math.min(10, prev + 1))}
+                 className="px-3 py-3 hover:bg-gray-700 text-blue-400"
+               >+</button>
+            </div>
+          </div>
         </div>
 
         <button 
           onClick={handleSave}
           disabled={loading}
-          className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-lg transition-all active:scale-95 shadow-lg shadow-green-900/20"
+          className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-lg transition-all active:scale-95 shadow-lg shadow-green-900/20 mt-2"
         >
-          {loading ? 'Guardando...' : 'AGREGAR SERIE'}
+          {loading 
+            ? 'Guardando...' 
+            : `AGREGAR ${setCount > 1 ? setCount + ' SERIES' : 'SERIE'}`
+          }
         </button>
       </div>
 
@@ -208,7 +231,7 @@ export default function LogWorkout({ exercises: initialExercises }: { exercises:
         </h4>
         
         {history.length === 0 ? (
-          <p className="text-gray-500 text-sm italic">Sin datos previos para este ejercicio.</p>
+          <p className="text-gray-500 text-sm italic">Sin datos previos.</p>
         ) : (
           <div className="space-y-2">
             {history.map((set) => (
