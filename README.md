@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🏋️‍♂️ GymTracker - Progressive Overload Assistant
 
-## Getting Started
+![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)
+![Supabase](https://img.shields.io/badge/Supabase-Database-green?style=for-the-badge&logo=supabase)
+![TypeScript](https://img.shields.io/badge/TypeScript-Pro-blue?style=for-the-badge&logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-Style-38B2AC?style=for-the-badge&logo=tailwind-css)
 
-First, run the development server:
+> Una aplicación Fullstack progresiva (PWA) diseñada para optimizar la hipertrofia y el seguimiento de fuerza. Construida pensando en la eficiencia del usuario durante el entrenamiento.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+🚀 **Live Demo:** [https://gym-tracker-ecru-phi.vercel.app](https://gym-tracker-ecru-phi.vercel.app)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ⚡ Características Principales
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Más que un simple bloc de notas, es una herramienta de ingeniería de software aplicada al fitness:
 
-## Learn More
+### 📱 Experiencia de Usuario (UX)
+- **Modo Entreno Inmersivo:** Interfaz optimizada para móviles con inputs "pegajosos" (Sticky Inputs) para evitar re-escribir pesos.
+- **Bulk Logging:** Funcionalidad para registrar múltiples series idénticas con un solo clic.
+- **Rest Timer Integrado:** Cronómetro automático con feedback háptico (vibración) al finalizar el descanso.
+- **Visualización de Datos:** Gráficos de progreso en tiempo real (`Recharts`) integrados en la sesión de entrenamiento.
+- **Historial Interactivo:** Feed cronológico con agrupación inteligente de sesiones y cálculo de volumen total.
 
-To learn more about Next.js, take a look at the following resources:
+### 🛠️ Arquitectura Técnica
+- **Gestión Dinámica de Rutinas:** Creación de planes de entrenamiento y capacidad de agregar ejercicios "Extra" en caliente (Quick Add).
+- **Seguridad Robusta:** Autenticación completa con Supabase Auth y protección de datos vía RLS (Row Level Security).
+- **Backend Serverless:** Base de datos PostgreSQL gestionada en la nube.
+- **Rendimiento:** Uso de React Server Components para una carga instantánea.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Instala las dependencias
+npm install
 
-## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+👨‍💻 Autor
+Favio Olivera
+
+Desarrollador Fullstack.
+
+Enfocado en crear productos digitales escalables y funcionales.
+
+📍 Córdoba, Argentina
