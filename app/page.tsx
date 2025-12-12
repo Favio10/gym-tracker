@@ -24,7 +24,7 @@ export default async function Home() {
       <div className="max-w-md mx-auto">
         <header className="flex justify-between items-center mb-8 bg-gray-800/50 p-4 rounded-xl border border-gray-700 backdrop-blur-sm">
           <div>
-            <h1 className="text-2xl font-bold text-blue-400 tracking-tighter">GYM TRACKER 🚀</h1>
+            <h1 className="text-2xl font-bold text-blue-400 tracking-tighter">GYM TRACKER  🚀</h1>
             <p className="text-[10px] text-gray-400 font-mono">USUARIO: {user.email?.split('@')[0].toUpperCase()}</p>
           </div>
 
