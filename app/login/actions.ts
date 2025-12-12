@@ -37,7 +37,7 @@ export async function signup(formData: FormData) {
     })
 
     if (error) {
-        console.log('Error en registro: ', error)
+        console.log('Error en registros: ', error)
         redirect('/error')
     }
 
